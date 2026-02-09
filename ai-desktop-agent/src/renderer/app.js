@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Sparkles, X, Send, Camera, Zap, Settings, Minimize2, MessageSquare, Loader2 } from "lucide-react";
+import { Sparkles, Send, Minimize2, Loader2, MessageSquare, Plus, History, Settings } from "lucide-react";
 
 export default function App() {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -68,86 +68,21 @@ export default function App() {
         }
     };
 
-    const handleQuickAction = async (action) => {
-        const actionMessages = {
-            analyze: "📸 Analyzing your screen...",
-            automate: "⚡ Starting automation...",
-            organize: "📁 Organizing files..."
-        };
-
-        const userMessage = {
-            id: Date.now(),
-            type: 'user',
-            content: actionMessages[action],
-            timestamp: new Date()
-        };
-
-        setMessages(prev => [...prev, userMessage]);
-        setIsLoading(true);
-
-        try {
-            if (action === 'analyze') {
-                const response = await window.api.analyzeScreen("What's on my screen?");
-                const aiMessage = {
-                    id: Date.now() + 1,
-                    type: 'ai',
-                    content: response.analysis || response.error || "Screen analysis complete!",
-                    timestamp: new Date()
-                };
-                setMessages(prev => [...prev, aiMessage]);
-            }
-        } catch (error) {
-            const errorMessage = {
-                id: Date.now() + 1,
-                type: 'ai',
-                content: "Action completed! (Note: Full automation requires additional setup)",
-                timestamp: new Date()
-            };
-            setMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     return (
         <div className="relative w-full h-screen overflow-hidden bg-transparent">
-            {/* Floating Icon (Collapsed State) */}
             {!isExpanded && (
-                <div
-                    onClick={toggleExpanded}
-                    className="draggable-icon absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-                >
-                    <div className="relative">
-                        {/* Animated glow rings */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full blur-2xl opacity-60 group-hover:opacity-90 transition-opacity duration-500 animate-pulse"></div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-full blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-700 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-
-                        {/* Icon container with glassmorphism */}
-                        <div className="relative bg-gradient-to-br from-blue-600/90 via-purple-600/90 to-pink-600/90 backdrop-blur-xl rounded-full p-8 shadow-2xl group-hover:scale-110 transition-all duration-300 border border-white/20">
-                            <div className="text-6xl">🦅</div>
-                        </div>
-
-                        {/* Orbiting particles */}
-                        <div className="absolute inset-0 rounded-full">
-                            <div className="absolute top-0 left-1/2 w-2 h-2 bg-blue-400 rounded-full animate-ping"></div>
-                            <div className="absolute bottom-0 right-1/2 w-2 h-2 bg-purple-400 rounded-full animate-ping" style={{ animationDelay: '0.3s' }}></div>
-                            <div className="absolute top-1/2 right-0 w-2 h-2 bg-pink-400 rounded-full animate-ping" style={{ animationDelay: '0.6s' }}></div>
-                        </div>
-                    </div>
-
-                    {/* Enhanced tooltip */}
-                    <div className="absolute top-full mt-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap">
-                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-6 py-3 rounded-xl shadow-2xl text-sm font-medium border border-white/10 backdrop-blur-sm">
-                            <div className="flex items-center gap-2">
-                                <Sparkles className="w-4 h-4" />
-                                Click to open AI Agent
-                            </div>
-                        </div>
-                    </div>
+                <div className="no-drag absolute inset-0 flex items-center justify-center">
+                    <button
+                        onClick={toggleExpanded}
+                        className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-2xl"
+                        title="Open Agent"
+                    >
+                        <Sparkles className="w-8 h-8 text-white" />
+                    </button>
                 </div>
             )}
 
-            {/* Expanded State - Premium Chat Interface */}
+            {/* Expanded State - Chat-first (Cline-like) Interface */}
             {isExpanded && (
                 <div className="no-drag w-full h-full bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white flex flex-col overflow-hidden rounded-2xl shadow-2xl border border-white/10 backdrop-blur-xl">
                     {/* Header */}
@@ -159,12 +94,32 @@ export default function App() {
                                 </div>
                                 <div>
                                     <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                                        AI Agent
+                                        Cline-style Agent
                                     </h1>
-                                    <p className="text-xs text-slate-400">Always ready to help</p>
+                                    <p className="text-xs text-slate-400">Chat-first interface</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
+
+                            <div className="flex items-center gap-1">
+                                <button
+                                    className="p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
+                                    title="New chat"
+                                    onClick={() => setMessages([])}
+                                >
+                                    <Plus className="w-4 h-4 text-slate-300" />
+                                </button>
+                                <button
+                                    className="p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
+                                    title="History"
+                                >
+                                    <History className="w-4 h-4 text-slate-300" />
+                                </button>
+                                <button
+                                    className="p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
+                                    title="Settings"
+                                >
+                                    <Settings className="w-4 h-4 text-slate-300" />
+                                </button>
                                 <button
                                     onClick={toggleExpanded}
                                     className="p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg transition-colors duration-200 group"
@@ -176,33 +131,6 @@ export default function App() {
                         </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="p-4 bg-slate-900/50 border-b border-white/5">
-                        <div className="grid grid-cols-3 gap-2">
-                            <button
-                                onClick={() => handleQuickAction('analyze')}
-                                className="flex flex-col items-center gap-2 p-3 bg-gradient-to-br from-blue-600/20 to-blue-700/20 hover:from-blue-600/30 hover:to-blue-700/30 rounded-xl transition-all duration-200 border border-blue-500/20 hover:border-blue-500/40 group"
-                            >
-                                <Camera className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs text-slate-300">Analyze</span>
-                            </button>
-                            <button
-                                onClick={() => handleQuickAction('automate')}
-                                className="flex flex-col items-center gap-2 p-3 bg-gradient-to-br from-purple-600/20 to-purple-700/20 hover:from-purple-600/30 hover:to-purple-700/30 rounded-xl transition-all duration-200 border border-purple-500/20 hover:border-purple-500/40 group"
-                            >
-                                <Zap className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs text-slate-300">Automate</span>
-                            </button>
-                            <button
-                                onClick={() => handleQuickAction('organize')}
-                                className="flex flex-col items-center gap-2 p-3 bg-gradient-to-br from-pink-600/20 to-pink-700/20 hover:from-pink-600/30 hover:to-pink-700/30 rounded-xl transition-all duration-200 border border-pink-500/20 hover:border-pink-500/40 group"
-                            >
-                                <Settings className="w-5 h-5 text-pink-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs text-slate-300">Settings</span>
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Chat Messages */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {messages.length === 0 && (
@@ -211,7 +139,7 @@ export default function App() {
                                     <MessageSquare className="w-12 h-12 text-purple-400 mx-auto mb-3" />
                                     <h3 className="text-lg font-semibold mb-2 text-slate-200">Welcome!</h3>
                                     <p className="text-sm text-slate-400 max-w-xs">
-                                        I'm your AI assistant. Ask me anything or use the quick actions above!
+                                        Ask anything. This is now focused on chat like Cline.
                                     </p>
                                 </div>
                             </div>

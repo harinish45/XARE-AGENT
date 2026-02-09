@@ -1,5 +1,17 @@
-const Anthropic = require('@anthropic-ai/sdk');
-const OpenAI = require('openai');
+// Optional AI SDK loading - gracefully handle missing dependencies
+let Anthropic, OpenAI;
+
+try {
+    Anthropic = require('@anthropic-ai/sdk');
+} catch (error) {
+    console.warn('⚠️  Anthropic SDK not available. Install with: npm install @anthropic-ai/sdk');
+}
+
+try {
+    OpenAI = require('openai');
+} catch (error) {
+    console.warn('⚠️  OpenAI SDK not available. Install with: npm install openai');
+}
 
 class AIEngine {
     constructor(config) {
@@ -8,14 +20,14 @@ class AIEngine {
         this.provider = config.defaultProvider || 'anthropic';
         this.conversationHistory = [];
 
-        // Initialize providers based on available keys
-        if (config.anthropicKey) {
+        // Initialize providers based on available keys and SDKs
+        if (config.anthropicKey && Anthropic) {
             this.anthropic = new Anthropic({
                 apiKey: config.anthropicKey
             });
         }
 
-        if (config.openaiKey) {
+        if (config.openaiKey && OpenAI) {
             this.openai = new OpenAI({
                 apiKey: config.openaiKey
             });

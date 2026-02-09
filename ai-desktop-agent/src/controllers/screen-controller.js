@@ -6,9 +6,8 @@ const os = require('os');
 
 const execAsync = promisify(exec);
 
-// Tesseract.js for OCR (install with: npm install tesseract.js)
-// Uncomment when installed:
-// const Tesseract = require('tesseract.js');
+// Tesseract.js for OCR
+const Tesseract = require('tesseract.js');
 
 class ScreenController {
     constructor() {
@@ -24,11 +23,16 @@ class ScreenController {
         if (this.initialized) return;
 
         try {
-            // Initialize Tesseract worker when library is installed
-            // Uncomment when tesseract.js is installed:
-            // this.ocrWorker = await Tesseract.createWorker();
-            // await this.ocrWorker.loadLanguage('eng');
-            // await this.ocrWorker.initialize('eng');
+            // Initialize Tesseract worker
+            console.log('[OCR] Initializing Tesseract worker...');
+            this.ocrWorker = await Tesseract.createWorker('eng', 1, {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        console.log(`[OCR] Progress: ${Math.round(m.progress * 100)}%`);
+                    }
+                }
+            });
+            console.log('[OCR] Tesseract worker initialized successfully');
 
             this.initialized = true;
             console.log('ScreenController initialized');
@@ -50,11 +54,16 @@ class ScreenController {
             const screenshotPath = path.join(this.tempDir, `screenshot_${Date.now()}.png`);
 
             if (platform === 'win32') {
-                // Windows: Use PowerShell with .NET
+                // Windows: Use PowerShell with .NET - support multi-monitor
                 const psScript = `
                     Add-Type -AssemblyName System.Windows.Forms;
                     Add-Type -AssemblyName System.Drawing;
-                    $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds;
+                    $screens = [System.Windows.Forms.Screen]::AllScreens;
+                    if ($screens.Count -gt ${displayIndex}) {
+                        $bounds = $screens[${displayIndex}].Bounds;
+                    } else {
+                        $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds;
+                    }
                     $bitmap = New-Object System.Drawing.Bitmap $bounds.width, $bounds.height;
                     $graphics = [System.Drawing.Graphics]::FromImage($bitmap);
                     $graphics.CopyFromScreen($bounds.X, $bounds.Y, 0, 0, $bounds.size);
@@ -64,16 +73,19 @@ class ScreenController {
                 `;
                 await execAsync(`powershell -Command "${psScript}"`);
             } else if (platform === 'darwin') {
-                // macOS: Use screencapture
-                await execAsync(`screencapture -x "${screenshotPath}"`);
+                // macOS: Use screencapture with display parameter
+                const displayParam = displayIndex > 0 ? `-D${displayIndex}` : '';
+                await execAsync(`screencapture ${displayParam} -x "${screenshotPath}"`);
             } else if (platform === 'linux') {
                 // Linux: Try multiple methods
                 try {
-                    // Try gnome-screenshot first
-                    await execAsync(`gnome-screenshot -f "${screenshotPath}"`);
+                    // Try gnome-screenshot first with display
+                    const displayParam = displayIndex > 0 ? `--display=:0.${displayIndex}` : '';
+                    await execAsync(`gnome-screenshot ${displayParam} -f "${screenshotPath}"`);
                 } catch {
-                    // Try scrot
-                    await execAsync(`scrot "${screenshotPath}"`);
+                    // Try scrot with display
+                    const displayParam = displayIndex > 0 ? `-d :0.${displayIndex}` : '';
+                    await execAsync(`scrot ${displayParam} "${screenshotPath}"`);
                 }
             }
 
@@ -141,9 +153,9 @@ class ScreenController {
             const tempPath = path.join(this.tempDir, `ocr_${Date.now()}.png`);
             fs.writeFileSync(tempPath, imageBuffer);
 
-            // TODO: Perform OCR when tesseract.js is installed
-            // Uncomment when tesseract.js is installed:
-            /*
+            console.log('[OCR] Starting text extraction...');
+
+            // Perform OCR with Tesseract
             const result = await this.ocrWorker.recognize(tempPath, {
                 lang: options.lang || 'eng',
                 ...options
@@ -161,16 +173,12 @@ class ScreenController {
                     text: l.text,
                     confidence: l.confidence,
                     bbox: l.bbox
+                })),
+                paragraphs: result.data.paragraphs.map(p => ({
+                    text: p.text,
+                    confidence: p.confidence,
+                    bbox: p.bbox
                 }))
-            };
-            */
-
-            // Placeholder until tesseract.js is installed
-            const ocrResult = {
-                text: '[OCR not available - install tesseract.js with: npm install tesseract.js]',
-                confidence: 0,
-                words: [],
-                lines: []
             };
 
             // Cache result
@@ -183,7 +191,7 @@ class ScreenController {
                 // Ignore cleanup errors
             }
 
-            console.log(`[OCR] Extracted text (confidence: ${ocrResult.confidence}%)`);
+            console.log(`[OCR] Extracted ${ocrResult.text.length} characters (confidence: ${ocrResult.confidence}%)`);
             return ocrResult;
         } catch (error) {
             console.error('OCR extraction error:', error);
@@ -192,6 +200,7 @@ class ScreenController {
                 confidence: 0,
                 words: [],
                 lines: [],
+                paragraphs: [],
                 error: error.message
             };
         }
@@ -357,6 +366,162 @@ class ScreenController {
         }
     }
 
+    /**
+     * Get information about all connected displays
+     * @returns {Promise<Array>} Array of display information
+     */
+    async getDisplays() {
+        try {
+            const platform = process.platform;
+
+            if (platform === 'win32') {
+                const psScript = `
+                    Add-Type -AssemblyName System.Windows.Forms;
+                    $screens = [System.Windows.Forms.Screen]::AllScreens;
+                    $result = @();
+                    for ($i = 0; $i -lt $screens.Count; $i++) {
+                        $result += @{
+                            index = $i;
+                            isPrimary = $screens[$i].Primary;
+                            bounds = @{
+                                x = $screens[$i].Bounds.X;
+                                y = $screens[$i].Bounds.Y;
+                                width = $screens[$i].Bounds.Width;
+                                height = $screens[$i].Bounds.Height;
+                            };
+                            workingArea = @{
+                                x = $screens[$i].WorkingArea.X;
+                                y = $screens[$i].WorkingArea.Y;
+                                width = $screens[$i].WorkingArea.Width;
+                                height = $screens[$i].WorkingArea.Height;
+                            };
+                            deviceName = $screens[$i].DeviceName;
+                        }
+                    }
+                    $result | ConvertTo-Json;
+                `;
+                const { stdout } = await execAsync(`powershell -Command "${psScript}"`);
+                return JSON.parse(stdout);
+            } else if (platform === 'darwin') {
+                const { stdout } = await execAsync(`
+                    system_profiler SPDisplaysDataType | grep -A 3 "Resolution"
+                `);
+                // Parse macOS display info (simplified)
+                const lines = stdout.trim().split('\n');
+                const displays = [];
+                let currentDisplay = { index: 0, isPrimary: true };
+
+                for (const line of lines) {
+                    if (line.includes('Resolution')) {
+                        const match = line.match(/(\d+)\s*x\s*(\d+)/);
+                        if (match) {
+                            currentDisplay.bounds = {
+                                x: 0,
+                                y: 0,
+                                width: parseInt(match[1]),
+                                height: parseInt(match[2])
+                            };
+                            currentDisplay.workingArea = { ...currentDisplay.bounds };
+                            displays.push({ ...currentDisplay });
+                            currentDisplay = { index: displays.length, isPrimary: false };
+                        }
+                    }
+                }
+
+                return displays.length > 0 ? displays : [{
+                    index: 0,
+                    isPrimary: true,
+                    bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+                    workingArea: { x: 0, y: 0, width: 1920, height: 1080 },
+                    deviceName: 'Primary Display'
+                }];
+            } else if (platform === 'linux') {
+                // Linux: Use xrandr
+                try {
+                    const { stdout } = await execAsync('xrandr --query');
+                    const lines = stdout.trim().split('\n');
+                    const displays = [];
+                    let index = 0;
+
+                    for (const line of lines) {
+                        if (line.includes(' connected')) {
+                            const parts = line.split(/\s+/);
+                            const name = parts[0];
+                            const resolutionMatch = line.match(/(\d+)x(\d+)\+/);
+                            if (resolutionMatch) {
+                                displays.push({
+                                    index: index++,
+                                    isPrimary: line.includes('primary'),
+                                    bounds: {
+                                        x: parseInt(resolutionMatch[3]) || 0,
+                                        y: parseInt(resolutionMatch[4]) || 0,
+                                        width: parseInt(resolutionMatch[1]),
+                                        height: parseInt(resolutionMatch[2])
+                                    },
+                                    workingArea: {
+                                        x: parseInt(resolutionMatch[3]) || 0,
+                                        y: parseInt(resolutionMatch[4]) || 0,
+                                        width: parseInt(resolutionMatch[1]),
+                                        height: parseInt(resolutionMatch[2])
+                                    },
+                                    deviceName: name
+                                });
+                            }
+                        }
+                    }
+
+                    return displays.length > 0 ? displays : [{
+                        index: 0,
+                        isPrimary: true,
+                        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+                        workingArea: { x: 0, y: 0, width: 1920, height: 1080 },
+                        deviceName: 'Primary Display'
+                    }];
+                } catch {
+                    return [{
+                        index: 0,
+                        isPrimary: true,
+                        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+                        workingArea: { x: 0, y: 0, width: 1920, height: 1080 },
+                        deviceName: 'Primary Display'
+                    }];
+                }
+            }
+
+            return [{
+                index: 0,
+                isPrimary: true,
+                bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+                workingArea: { x: 0, y: 0, width: 1920, height: 1080 },
+                deviceName: 'Primary Display'
+            }];
+        } catch (error) {
+            console.error('Get displays error:', error);
+            return [{
+                index: 0,
+                isPrimary: true,
+                bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+                workingArea: { x: 0, y: 0, width: 1920, height: 1080 },
+                deviceName: 'Primary Display'
+            }];
+        }
+    }
+
+    /**
+     * Get primary display index
+     * @returns {Promise<number>} Index of primary display
+     */
+    async getPrimaryDisplayIndex() {
+        try {
+            const displays = await this.getDisplays();
+            const primary = displays.find(d => d.isPrimary);
+            return primary ? primary.index : 0;
+        } catch (error) {
+            console.error('Get primary display error:', error);
+            return 0;
+        }
+    }
+
     async cleanup() {
         // Clean up temp files older than 1 hour
         try {
@@ -374,8 +539,8 @@ class ScreenController {
 
             // Cleanup OCR resources
             if (this.ocrWorker) {
-                // Uncomment when tesseract.js is installed:
-                // await this.ocrWorker.terminate();
+                console.log('[OCR] Terminating worker...');
+                await this.ocrWorker.terminate();
                 this.ocrWorker = null;
             }
             this.clearOCRCache();

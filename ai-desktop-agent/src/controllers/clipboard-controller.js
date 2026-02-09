@@ -1,4 +1,4 @@
-const clipboardy = require('clipboardy');
+const { clipboard } = require('electron');
 
 class ClipboardController {
     constructor() {
@@ -7,7 +7,7 @@ class ClipboardController {
 
     async read() {
         try {
-            const text = await clipboardy.read();
+            const text = clipboard.readText();
             return text;
         } catch (error) {
             throw new Error(`Failed to read clipboard: ${error.message}`);
@@ -16,7 +16,7 @@ class ClipboardController {
 
     async write(text) {
         try {
-            await clipboardy.write(text);
+            clipboard.writeText(text);
             return true;
         } catch (error) {
             throw new Error(`Failed to write to clipboard: ${error.message}`);
@@ -25,10 +25,45 @@ class ClipboardController {
 
     async clear() {
         try {
-            await clipboardy.write('');
+            clipboard.clear();
             return true;
         } catch (error) {
             throw new Error(`Failed to clear clipboard: ${error.message}`);
+        }
+    }
+
+    // Additional Electron clipboard methods
+    readHTML() {
+        try {
+            return clipboard.readHTML();
+        } catch (error) {
+            throw new Error(`Failed to read HTML from clipboard: ${error.message}`);
+        }
+    }
+
+    writeHTML(html) {
+        try {
+            clipboard.writeHTML(html);
+            return true;
+        } catch (error) {
+            throw new Error(`Failed to write HTML to clipboard: ${error.message}`);
+        }
+    }
+
+    readImage() {
+        try {
+            return clipboard.readImage();
+        } catch (error) {
+            throw new Error(`Failed to read image from clipboard: ${error.message}`);
+        }
+    }
+
+    writeImage(image) {
+        try {
+            clipboard.writeImage(image);
+            return true;
+        } catch (error) {
+            throw new Error(`Failed to write image to clipboard: ${error.message}`);
         }
     }
 }
