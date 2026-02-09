@@ -1,2 +1,0 @@
-src/sidepanel/components/WorkflowsTab.tsx(2,39): error TS6133: 'CardContent' is declared but its value is never read.
-src/sidepanel/components/WorkflowsTab.tsx(22,25): error TS6133: 'setActiveModel' is declared but its value is never read.
