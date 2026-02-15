@@ -1,8 +1,8 @@
-'use client';
-
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { executeWorkflow, ExecutionState } from '@/lib/workflow/executor';
+import { Workflow, NodeType } from '@/lib/workflow/types';
 
 interface Node {
     id: string;
@@ -12,6 +12,7 @@ interface Node {
     x: number;
     y: number;
     description?: string;
+    data?: any; // Added to store node configuration
 }
 
 // Animated background
@@ -141,6 +142,37 @@ const SidebarItem = ({ icon, name, description, onClick, color }: { icon: string
 );
 
 export default function AgentBuilderPage() {
+    // AI Generation Logic
+    const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const handleGenerateWorkflow = async () => {
+        if (!aiPrompt.trim()) return;
+        setIsGenerating(true);
+        try {
+            const response = await fetch('/api/ai/generate-workflow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: aiPrompt }),
+            });
+            const data = await response.json();
+
+            if (data.workflow) {
+                // Map AI workflow to builder state
+                // This assumes the AI returns nodes compatible with our builder
+                setNodes(data.workflow.nodes);
+                // setConnections(data.workflow.edges...); // Connections not fully implemented in this MVP builder yet
+                setIsAIModalOpen(false);
+                setAiPrompt('');
+            }
+        } catch (error) {
+            console.error('Failed to generate workflow:', error);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     const [nodes, setNodes] = useState<Node[]>([
         { id: '1', type: 'trigger', name: 'Webhook', icon: '🌐', x: 100, y: 200, description: 'HTTP endpoint trigger' },
         { id: '2', type: 'action', name: 'AI Reasoning', icon: '🤖', x: 320, y: 200, description: 'LLM processing node' },
@@ -153,20 +185,59 @@ export default function AgentBuilderPage() {
     const [editedNodeName, setEditedNodeName] = useState('');
     const [editedNodeDescription, setEditedNodeDescription] = useState('');
     const [activeTab, setActiveTab] = useState<'nodes' | 'mcp' | 'templates'>('nodes');
+    const [logs, setLogs] = useState<string[]>([]);
+    const [isRunning, setIsRunning] = useState(false);
 
-    useEffect(() => {
-        const importedWorkflowStr = localStorage.getItem('importedWorkflow');
-        if (importedWorkflowStr) {
-            try {
-                const workflow = JSON.parse(importedWorkflowStr);
-                if (workflow.nodes) setNodes(workflow.nodes);
-                if (workflow.name) setAgentName(workflow.name);
-                localStorage.removeItem('importedWorkflow');
-            } catch (error) {
-                console.error('Failed to parse imported workflow:', error);
-            }
+    const handleRunWorkflow = async () => {
+        setIsRunning(true);
+        setLogs(['Starting workflow execution...']);
+        try {
+            // Convert Builder Nodes to Workflow Schema
+            // TODO: Edges/Connections are currently implicit or missing in this mockup state. 
+            // We need to infer linear attributes or use a real graph.
+            // For now, we assume a linear flow based on Y position or ID order for the demo.
+
+            const sortedNodes = [...nodes].sort((a, b) => a.y - b.y);
+            // Create implicit edges for linear flow
+            const edges = sortedNodes.slice(0, -1).map((n, i) => ({
+                id: `e-${i}`,
+                source: n.id,
+                target: sortedNodes[i + 1].id
+            }));
+
+            // Map to valid Workflow structure
+            // We need to map builder types to system types if they differ
+            const systemNodes = sortedNodes.map(n => ({
+                id: n.id,
+                type: n.data?.type || (n.type === 'trigger' ? NodeType.TRIGGER : NodeType.ACTION_LLM), // Fallback
+                position: { x: n.x, y: n.y },
+                data: n.data || {}
+            }));
+
+            const workflow: Workflow = {
+                id: 'demo-run',
+                name: agentName,
+                nodes: systemNodes,
+                edges: edges,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            };
+
+            const result = await executeWorkflow(workflow);
+
+            setLogs(prev => [
+                ...prev,
+                ...result.logs.map(l => `[${l.status.toUpperCase()}] ${l.nodeType}: ${JSON.stringify(l.output || l.error)}`)
+            ]);
+            setLogs(prev => [...prev, 'Execution completed successfully.']);
+
+        } catch (error: any) {
+            console.error('Execution failed:', error);
+            setLogs(prev => [...prev, `Error: ${error.message}`]);
+        } finally {
+            setIsRunning(false);
         }
-    }, []);
+    };
 
     useEffect(() => {
         if (selectedNode) {
@@ -246,8 +317,55 @@ export default function AgentBuilderPage() {
     }, [selectedNode, nodes]);
 
     return (
-        <div className="min-h-screen bg-[#030008] font-sans antialiased overflow-hidden">
-            {/* Header */}
+        <div className="min-h-screen bg-[#030008] font-sans antialiased overflow-hidden relative">
+            {/* AI Prompt Modal */}
+            <AnimatePresence>
+                {isAIModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="bg-[#1a1f3c] border border-purple-500/50 p-6 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(168,85,247,0.2)]"
+                        >
+                            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                <span className="text-2xl">✨</span> AI Workflow Generator
+                            </h3>
+                            <textarea
+                                value={aiPrompt}
+                                onChange={(e) => setAiPrompt(e.target.value)}
+                                placeholder="Describe your automation... e.g., 'Monitor my Twitter for mentions and auto-reply with a thank you message using GPT-4'"
+                                className="w-full h-32 bg-[#0a0e1a] border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 resize-none"
+                            />
+                            <div className="flex justify-end gap-3 mt-4">
+                                <button
+                                    onClick={() => setIsAIModalOpen(false)}
+                                    className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleGenerateWorkflow}
+                                    disabled={isGenerating || !aiPrompt.trim()}
+                                    className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isGenerating ? (
+                                        <>
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>Generate Workflow 🚀</>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+
+
             <motion.nav
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
@@ -305,14 +423,27 @@ export default function AgentBuilderPage() {
                                     <span className="text-lg">{item.icon}</span>
                                 </motion.button>
                             ))}
+
+                            <motion.button
+                                onClick={() => setIsAIModalOpen(true)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="px-3 py-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 text-purple-400 rounded-xl hover:bg-purple-500/20 transition-all flex items-center gap-2 mr-2"
+                            >
+                                <span className="text-lg">✨</span>
+                                <span className="font-medium text-sm hidden sm:inline">AI Magic</span>
+                            </motion.button>
+
                             <div className="h-6 w-px bg-white/10" />
                             <motion.button
+                                onClick={handleRunWorkflow}
+                                disabled={isRunning}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-4 py-2 hover:bg-white/5 rounded-xl border border-white/10"
+                                className={`flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-4 py-2 hover:bg-white/5 rounded-xl border border-white/10 ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                <span className="text-lg">▶️</span>
-                                <span className="font-medium text-sm">Test</span>
+                                <span className="text-lg">{isRunning ? '⏳' : '▶️'}</span>
+                                <span className="font-medium text-sm">{isRunning ? 'Running...' : 'Test'}</span>
                             </motion.button>
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
@@ -344,8 +475,8 @@ export default function AgentBuilderPage() {
                                 whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
                                 whileTap={{ scale: 0.98 }}
                                 className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === tab
-                                        ? 'text-white bg-white/5 border-b-2 border-purple-500'
-                                        : 'text-gray-400'
+                                    ? 'text-white bg-white/5 border-b-2 border-purple-500'
+                                    : 'text-gray-400'
                                     }`}
                             >
                                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -498,6 +629,33 @@ export default function AgentBuilderPage() {
                 <div className="flex-1 relative overflow-hidden bg-[#050508]">
                     <AnimatedBackground />
 
+                    {/* Log Viewer Overlay */}
+                    <AnimatePresence>
+                        {logs.length > 0 && (
+                            <motion.div
+                                initial={{ y: 200, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: 200, opacity: 0 }}
+                                className="absolute bottom-0 left-0 right-0 bg-[#0a0a0f]/95 border-t border-white/10 p-4 h-48 overflow-y-auto z-40 font-mono text-sm shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
+                            >
+                                <div className="flex justify-between items-center mb-2 sticky top-0 bg-[#0a0a0f] py-1">
+                                    <h3 className="text-cyan-400 font-bold flex items-center gap-2">
+                                        <span className="text-lg">📟</span> Execution Logs
+                                    </h3>
+                                    <button onClick={() => setLogs([])} className="text-gray-500 hover:text-white text-xs px-2 py-1 hover:bg-white/10 rounded">Clear</button>
+                                </div>
+                                <div className="space-y-1 font-mono text-xs">
+                                    {logs.map((log, i) => (
+                                        <div key={i} className="text-gray-300 border-l-2 border-white/10 pl-2 py-0.5">
+                                            {log}
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+
                     {/* Canvas Content */}
                     <div className="absolute inset-0">
                         {/* Connection Lines */}
@@ -561,20 +719,23 @@ export default function AgentBuilderPage() {
 
                     {/* Test Button */}
                     <motion.button
+                        onClick={handleRunWorkflow}
+                        disabled={isRunning}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="absolute bottom-6 right-6 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white px-6 py-3 rounded-xl shadow-xl shadow-purple-500/25 flex items-center gap-2 font-semibold"
+                        className={`absolute bottom-6 right-6 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white px-6 py-3 rounded-xl shadow-xl shadow-purple-500/25 flex items-center gap-2 font-semibold ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         <motion.span
                             animate={{ scale: [1, 1.2, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                         >
-                            ▶️
+                            {isRunning ? '⏳' : '▶️'}
                         </motion.span>
-                        <span>Test Agent</span>
+                        <span>{isRunning ? 'Running...' : 'Test Agent'}</span>
                     </motion.button>
+
                 </div>
 
                 {/* Right Sidebar - Properties */}
@@ -592,9 +753,9 @@ export default function AgentBuilderPage() {
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     className={`text-xs px-2.5 py-1 rounded-lg capitalize font-medium ${selectedNode.type === 'trigger' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                            selectedNode.type === 'action' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
-                                                selectedNode.type === 'logic' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                                                    'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                        selectedNode.type === 'action' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+                                            selectedNode.type === 'logic' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                                'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                                         }`}
                                 >
                                     {selectedNode.type}

@@ -19,13 +19,15 @@ export interface Agent {
   config: AgentConfig;
 }
 
-export type AgentType = 
-  | 'email' 
-  | 'browser' 
-  | 'file' 
-  | 'calendar' 
-  | 'code' 
-  | 'data' 
+export type AgentType =
+  | 'email'
+  | 'browser'
+  | 'file'
+  | 'calendar'
+  | 'code'
+  | 'data'
+  | 'social_media'
+  | 'content'
   | 'workflow'
   | 'general';
 
@@ -125,6 +127,28 @@ const agentCapabilities: Map<AgentType, string[]> = new Map([
     'clean_data',
     'predict',
   ]],
+  ['social_media', [
+    'post_social',
+    'schedule_social',
+    'cross_post',
+    'reply_comments',
+    'social_analytics',
+    'generate_hashtags',
+    'create_thread',
+    'social_dm',
+    'social_stories',
+    'social_reels',
+  ]],
+  ['content', [
+    'generate_caption',
+    'write_blog',
+    'create_carousel',
+    'generate_ad_copy',
+    'seo_optimize',
+    'transcript_to_content',
+    'content_calendar',
+    'adapt_content',
+  ]],
   ['workflow', [
     'create_workflow',
     'run_workflow',
@@ -157,6 +181,17 @@ const intentCapabilityMap: Record<string, string> = {
   deploy_code: 'deploy_code',
   run_test: 'test_code',
   create_workflow: 'create_workflow',
+  post_social: 'post_social',
+  schedule_social: 'schedule_social',
+  cross_post: 'cross_post',
+  reply_comments: 'reply_comments',
+  social_analytics: 'social_analytics',
+  generate_hashtags: 'generate_hashtags',
+  generate_caption: 'generate_caption',
+  write_blog: 'write_blog',
+  create_carousel: 'create_carousel',
+  seo_optimize: 'seo_optimize',
+  content_calendar: 'content_calendar',
   train_agent: 'general_command',
   ask_question: 'ask_question',
   general_command: 'general_command',
@@ -257,6 +292,32 @@ export class AgentRouter {
         config: { model: 'claude-3-sonnet', temperature: 0.3, priority: 2 },
       },
       {
+        id: 'social-media-agent-1',
+        name: 'Social Media Agent',
+        type: 'social_media',
+        status: 'idle',
+        capabilities: agentCapabilities.get('social_media') || [],
+        currentLoad: 0,
+        maxLoad: 10,
+        lastUsed: null,
+        successRate: 0.93,
+        avgResponseTime: 2000,
+        config: { model: 'claude-3-sonnet', temperature: 0.4, priority: 1 },
+      },
+      {
+        id: 'content-agent-1',
+        name: 'Content Agent',
+        type: 'content',
+        status: 'idle',
+        capabilities: agentCapabilities.get('content') || [],
+        currentLoad: 0,
+        maxLoad: 12,
+        lastUsed: null,
+        successRate: 0.94,
+        avgResponseTime: 1800,
+        config: { model: 'claude-3-sonnet', temperature: 0.6, priority: 1 },
+      },
+      {
         id: 'workflow-agent-1',
         name: 'Workflow Agent',
         type: 'workflow',
@@ -292,11 +353,11 @@ export class AgentRouter {
   // Route intent to appropriate agent
   route(intent: ParsedIntent): RoutingDecision {
     const capability = intentCapabilityMap[intent.primaryIntent] || 'general_command';
-    
+
     // Find agents with the required capability
     const capableAgents = Array.from(this.agents.values())
-      .filter(agent => 
-        agent.capabilities.includes(capability) && 
+      .filter(agent =>
+        agent.capabilities.includes(capability) &&
         agent.status !== 'offline'
       );
 
@@ -379,14 +440,14 @@ export class AgentRouter {
       reasons.push('fast response time');
     }
 
-    return reasons.length > 0 
+    return reasons.length > 0
       ? `Selected because it ${reasons.join(', ')}`
       : 'Best available agent for this task';
   }
 
   // Execute intent with selected agent
   async execute(
-    intent: ParsedIntent, 
+    intent: ParsedIntent,
     agent: Agent,
     executor: (intent: ParsedIntent, agent: Agent) => Promise<AgentResult>
   ): Promise<AgentResult> {
@@ -474,7 +535,7 @@ export class AgentRouter {
   updateAgentConfig(agentId: string, config: Partial<AgentConfig>): boolean {
     const agent = this.agents.get(agentId);
     if (!agent) return false;
-    
+
     agent.config = { ...agent.config, ...config };
     return true;
   }
@@ -502,7 +563,7 @@ export class AgentRouter {
     avgDuration: number;
   } | undefined {
     const agentHistory = this.executionHistory.filter(h => h.agent.id === agentId);
-    
+
     if (agentHistory.length === 0) return undefined;
 
     const successful = agentHistory.filter(h => h.result.success);
@@ -520,7 +581,7 @@ export class AgentRouter {
   // Health check all agents
   healthCheck(): Record<string, { status: AgentStatus; healthy: boolean }> {
     const health: Record<string, { status: AgentStatus; healthy: boolean }> = {};
-    
+
     this.agents.forEach((agent, id) => {
       health[id] = {
         status: agent.status,

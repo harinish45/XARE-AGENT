@@ -1,0 +1,4 @@
+﻿src/app/login/page.tsx(33,34): error TS2339: Property 'get' does not exist on type 'Promise<ReadonlyHeaders>'.
+src/app/login/page.tsx(56,34): error TS2339: Property 'get' does not exist on type 'Promise<ReadonlyHeaders>'.
+src/utils/supabase/server.ts(14,40): error TS2339: Property 'getAll' does not exist on type 'Promise<ReadonlyRequestCookies>'.
+src/utils/supabase/server.ts(19,41): error TS2339: Property 'set' does not exist on type 'Promise<ReadonlyRequestCookies>'.

@@ -3,95 +3,95 @@
 
 // Intent Parser
 export { IntentParser, intentParser } from './IntentParser';
-export type { 
-  ParsedIntent, 
-  Entity, 
-  Context, 
-  SessionContext, 
+export type {
+  ParsedIntent,
+  Entity,
+  Context,
+  SessionContext,
   TemporalContext,
   IntentType,
-  EntityType 
+  EntityType
 } from './IntentParser';
 
 // Agent Router
 export { AgentRouter, agentRouter } from './AgentRouter';
-export type { 
-  Agent, 
-  AgentStatus, 
-  AgentType, 
-  AgentConfig, 
-  AgentResult, 
-  RoutingDecision 
+export type {
+  Agent,
+  AgentStatus,
+  AgentType,
+  AgentConfig,
+  AgentResult,
+  RoutingDecision
 } from './AgentRouter';
 
 // Email Agent
 export { EmailAgent, createEmailAgent } from './EmailAgent';
-export type { 
-  Email, 
-  EmailDraft, 
-  Attachment, 
-  EmailTemplate, 
-  EmailAgentConfig 
+export type {
+  Email,
+  EmailDraft,
+  Attachment,
+  EmailTemplate,
+  EmailAgentConfig
 } from './EmailAgent';
 
 // Browser Agent
 export { BrowserAgent, createBrowserAgent } from './BrowserAgent';
-export type { 
-  BrowserSession, 
-  WebPage, 
-  Link, 
-  Image, 
-  Form, 
+export type {
+  BrowserSession,
+  WebPage,
+  Link,
+  Image,
+  Form,
   FormField,
   ScrapingResult,
   BrowserAction,
-  BrowserAgentConfig 
+  BrowserAgentConfig
 } from './BrowserAgent';
 
 // File Agent
 export { FileAgent, createFileAgent } from './FileAgent';
-export type { 
-  FileInfo, 
-  FileContent, 
-  SearchResult, 
+export type {
+  FileInfo,
+  FileContent,
+  SearchResult,
   OrganizationPlan,
   OrganizationAction,
-  FileAgentConfig 
+  FileAgentConfig
 } from './FileAgent';
 
 // Calendar Agent
 export { CalendarAgent, createCalendarAgent } from './CalendarAgent';
-export type { 
-  CalendarEvent, 
-  Attendee, 
-  Reminder, 
+export type {
+  CalendarEvent,
+  Attendee,
+  Reminder,
   RecurrenceRule,
   ConferenceData,
   TimeSlot,
-  CalendarAgentConfig 
+  CalendarAgentConfig
 } from './CalendarAgent';
 
 // Code Agent
 export { CodeAgent, createCodeAgent } from './CodeAgent';
-export type { 
-  CodeFile, 
-  CodeGenerationResult, 
-  CodeReviewResult, 
+export type {
+  CodeFile,
+  CodeGenerationResult,
+  CodeReviewResult,
   CodeIssue,
   SecurityIssue,
   ComplexityMetrics,
   TestResult,
   TestFailure,
   DeploymentResult,
-  CodeAgentConfig 
+  CodeAgentConfig
 } from './CodeAgent';
 
 // Data Agent
 export { DataAgent, createDataAgent } from './DataAgent';
-export type { 
-  Dataset, 
-  ColumnDefinition, 
-  AnalysisResult, 
+export type {
+  Dataset,
+  ColumnDefinition,
+  AnalysisResult,
   DataSummary,
   Statistics,
   NumericStats,
@@ -101,59 +101,87 @@ export type {
   Visualization,
   QueryResult,
   TransformOperation,
-  DataAgentConfig 
+  DataAgentConfig
 } from './DataAgent';
+
+// Social Media Agent
+export { SocialMediaAgent, createSocialMediaAgent } from './SocialMediaAgent';
+export type {
+  SocialPlatform,
+  SocialPost,
+  MediaAttachment,
+  EngagementMetrics,
+  ScheduleConfig,
+  CommentAction,
+  CrossPostConfig,
+  SocialMediaAgentConfig
+} from './SocialMediaAgent';
+
+// Content Agent
+export { ContentAgent, createContentAgent } from './ContentAgent';
+export type {
+  ContentType,
+  ContentTone,
+  ContentLength,
+  ContentRequest,
+  GeneratedContent,
+  ContentMetadata,
+  TranscriptToContentResult,
+  ContentCalendar,
+  ContentCalendarEntry,
+  ContentAgentConfig
+} from './ContentAgent';
 
 // Workflow Engine
 export { WorkflowEngine, workflowEngine } from '../workflow/WorkflowEngine';
-export type { 
-  Workflow, 
-  WorkflowNode, 
-  WorkflowEdge, 
+export type {
+  Workflow,
+  WorkflowNode,
+  WorkflowEdge,
   WorkflowTrigger,
   WorkflowExecution,
   NodeResult,
   WorkflowTemplate,
-  ExecutionContext 
+  ExecutionContext
 } from '../workflow/WorkflowEngine';
 
 // MCP Manager
 export { MCPManager, mcpManager } from '../mcp/MCPManager';
-export type { 
-  MCPServer, 
-  MCPCapability, 
-  MCPTool, 
+export type {
+  MCPServer,
+  MCPCapability,
+  MCPTool,
   MCPResource,
   MCPServerConfig,
   JSONSchema,
   MCPAction,
   MCPActionResult,
-  MCPServerTemplate 
+  MCPServerTemplate
 } from '../mcp/MCPManager';
 
 // Learning System
 export { LearningSystem, learningSystem } from '../learning/LearningSystem';
-export type { 
-  Feedback, 
-  Skill, 
-  SkillExample, 
+export type {
+  Feedback,
+  Skill,
+  SkillExample,
   SkillParameter,
   TrainingSession,
   TrainingConfig,
   TrainingMetrics,
-  LearningConfig 
+  LearningConfig
 } from '../learning/LearningSystem';
 
 // Safety Guards
 export { SafetyGuards, safetyGuards } from '../safety/SafetyGuards';
-export type { 
-  RiskLevel, 
-  SafetyAssessment, 
-  SafetyPolicy, 
+export type {
+  RiskLevel,
+  SafetyAssessment,
+  SafetyPolicy,
   SafetyRule,
   RuleCondition,
   Permission,
   Role,
   AuditLog,
-  SafetyConfig 
+  SafetyConfig
 } from '../safety/SafetyGuards';

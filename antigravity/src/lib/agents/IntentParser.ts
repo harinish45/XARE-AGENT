@@ -45,7 +45,7 @@ export interface TemporalContext {
   isWorkHours: boolean;
 }
 
-export type IntentType = 
+export type IntentType =
   | 'compose_email'
   | 'send_email'
   | 'schedule_meeting'
@@ -60,11 +60,22 @@ export type IntentType =
   | 'deploy_code'
   | 'run_test'
   | 'create_workflow'
+  | 'post_social'
+  | 'schedule_social'
+  | 'cross_post'
+  | 'reply_comments'
+  | 'social_analytics'
+  | 'generate_hashtags'
+  | 'generate_caption'
+  | 'write_blog'
+  | 'create_carousel'
+  | 'seo_optimize'
+  | 'content_calendar'
   | 'train_agent'
   | 'ask_question'
   | 'general_command';
 
-export type EntityType = 
+export type EntityType =
   | 'email_address'
   | 'person_name'
   | 'date'
@@ -78,7 +89,9 @@ export type EntityType =
   | 'topic'
   | 'programming_language'
   | 'database'
-  | 'api_endpoint';
+  | 'api_endpoint'
+  | 'social_platform'
+  | 'hashtag';
 
 // Intent patterns for matching
 const intentPatterns: Map<IntentType, RegExp[]> = new Map([
@@ -146,6 +159,52 @@ const intentPatterns: Map<IntentType, RegExp[]> = new Map([
   ['create_workflow', [
     /(?:create|build|make)\s+(?:a\s+)?(?:workflow|automation)/i,
     /automate\s+(.+)/i,
+  ]],
+  ['post_social', [
+    /(?:post|publish|share|upload)\s+(?:to\s+)?(?:instagram|youtube|twitter|linkedin|tiktok|social)/i,
+    /(?:post|share)\s+(?:my|the|this)?\s*(?:video|photo|image|reel|story)/i,
+    /(?:upload|put)\s+(?:this\s+)?(?:on|to)\s+(?:instagram|youtube|twitter|tiktok)/i,
+  ]],
+  ['schedule_social', [
+    /schedule\s+(?:a\s+)?(?:post|tweet|video|reel|story)/i,
+    /post\s+(?:this\s+)?(?:at|on|later|tomorrow|next)/i,
+  ]],
+  ['cross_post', [
+    /(?:cross[\-\s]?post|distribute|share)\s+(?:to\s+)?(?:all|every|multiple)\s*(?:platforms?)?/i,
+    /(?:post|share)\s+(?:this\s+)?everywhere/i,
+    /distribute\s+(?:the\s+)?(?:content|video|post)/i,
+  ]],
+  ['reply_comments', [
+    /(?:reply|respond)\s+(?:to\s+)?(?:comments?|dms?|messages?)/i,
+    /(?:manage|handle)\s+(?:the\s+)?comments?/i,
+  ]],
+  ['social_analytics', [
+    /(?:show|get|check)\s+(?:my\s+)?(?:social|instagram|youtube|twitter)?\s*(?:analytics|stats|performance|engagement)/i,
+    /how\s+(?:is|are)\s+my\s+(?:posts?|videos?)\s+(?:doing|performing)/i,
+  ]],
+  ['generate_hashtags', [
+    /(?:generate|find|suggest|create)\s+(?:some\s+)?hashtags?/i,
+    /(?:best|trending|top)\s+hashtags?\s+for/i,
+  ]],
+  ['generate_caption', [
+    /(?:generate|write|create)\s+(?:a\s+)?caption/i,
+    /(?:write|create)\s+(?:a\s+)?description\s+for/i,
+    /caption\s+(?:for|about)/i,
+  ]],
+  ['write_blog', [
+    /(?:write|create|generate)\s+(?:a\s+)?(?:blog\s*(?:post)?|article)/i,
+    /(?:turn|convert)\s+(?:this\s+)?(?:into|to)\s+(?:a\s+)?(?:blog|article)/i,
+  ]],
+  ['create_carousel', [
+    /(?:create|make|generate)\s+(?:a\s+)?(?:carousel|slides?|infographic)/i,
+  ]],
+  ['seo_optimize', [
+    /(?:optimize|improve)\s+(?:for\s+)?seo/i,
+    /seo\s+(?:check|audit|score)/i,
+  ]],
+  ['content_calendar', [
+    /(?:create|generate|plan)\s+(?:a\s+)?(?:content)?\s*calendar/i,
+    /(?:plan|schedule)\s+(?:my\s+)?content/i,
   ]],
   ['train_agent', [
     /(?:train|teach|educate)\s+(?:the\s+)?(?:agent|ai|model)/i,
@@ -223,6 +282,17 @@ const intentAgentMap: Map<IntentType, string> = new Map([
   ['deploy_code', 'code'],
   ['run_test', 'code'],
   ['create_workflow', 'workflow'],
+  ['post_social', 'social_media'],
+  ['schedule_social', 'social_media'],
+  ['cross_post', 'social_media'],
+  ['reply_comments', 'social_media'],
+  ['social_analytics', 'social_media'],
+  ['generate_hashtags', 'social_media'],
+  ['generate_caption', 'content'],
+  ['write_blog', 'content'],
+  ['create_carousel', 'content'],
+  ['seo_optimize', 'content'],
+  ['content_calendar', 'content'],
   ['train_agent', 'training'],
   ['ask_question', 'general'],
   ['general_command', 'general'],
@@ -250,19 +320,19 @@ export class IntentParser {
   // Main parsing function
   parse(input: string): ParsedIntent {
     const normalizedInput = input.trim().toLowerCase();
-    
+
     // Detect primary intent
     const { intent, confidence } = this.detectIntent(normalizedInput);
-    
+
     // Extract entities
     const entities = this.extractEntities(input);
-    
+
     // Determine suggested agent
     const suggestedAgent = intentAgentMap.get(intent) || 'general';
-    
+
     // Extract parameters based on intent and entities
     const parameters = this.extractParameters(intent, entities, input);
-    
+
     // Determine if follow-up is needed
     const { followUpNeeded, followUpQuestion } = this.checkFollowUp(intent, entities, parameters);
 
@@ -298,7 +368,7 @@ export class IntentParser {
           // Calculate confidence based on pattern specificity
           const matchLength = input.match(pattern)?.[0]?.length || 0;
           const confidence = Math.min(0.95, 0.5 + (matchLength / input.length) * 0.45);
-          
+
           if (confidence > bestConfidence) {
             bestConfidence = confidence;
             bestMatch = intentType;
@@ -318,7 +388,7 @@ export class IntentParser {
       for (const pattern of patterns) {
         let match;
         const regex = new RegExp(pattern.source, pattern.flags);
-        
+
         while ((match = regex.exec(input)) !== null) {
           entities.push({
             type: entityType,
@@ -336,8 +406,8 @@ export class IntentParser {
 
   // Extract parameters based on intent
   private extractParameters(
-    intent: IntentType, 
-    entities: Entity[], 
+    intent: IntentType,
+    entities: Entity[],
     input: string
   ): Record<string, any> {
     const params: Record<string, any> = {};
@@ -392,8 +462,8 @@ export class IntentParser {
 
   // Check if follow-up is needed
   private checkFollowUp(
-    intent: IntentType, 
-    entities: Entity[], 
+    intent: IntentType,
+    entities: Entity[],
     params: Record<string, any>
   ): { followUpNeeded: boolean; followUpQuestion?: string } {
     switch (intent) {
@@ -448,6 +518,17 @@ export class IntentParser {
       deploy_code: 'deploy_code:execute',
       run_test: 'run_test:execute',
       create_workflow: 'create_workflow:execute',
+      post_social: `post_social:${params.platform || 'instagram'}`,
+      schedule_social: `schedule_social:${params.platform || 'instagram'}`,
+      cross_post: 'cross_post:all_platforms',
+      reply_comments: 'reply_comments:execute',
+      social_analytics: `social_analytics:${params.platform || 'all'}`,
+      generate_hashtags: `generate_hashtags:${params.topic || 'general'}`,
+      generate_caption: `generate_caption:${params.platform || 'instagram'}`,
+      write_blog: 'write_blog:execute',
+      create_carousel: 'create_carousel:execute',
+      seo_optimize: 'seo_optimize:execute',
+      content_calendar: 'content_calendar:generate',
       train_agent: 'train_agent:execute',
       ask_question: 'ask_question:process',
       general_command: 'general:process',

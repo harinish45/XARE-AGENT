@@ -66,9 +66,11 @@ export interface WorkflowTemplate {
   name: string;
   description: string;
   category: string;
+  tags?: string[];
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
-  variables: Record<string, any>;
+  variables?: Record<string, any>;
+  estimatedDuration?: number;
 }
 
 // Built-in workflow templates
@@ -158,7 +160,7 @@ export class WorkflowEngine {
     triggers?: WorkflowTrigger[];
   }): Workflow {
     const id = `workflow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const workflow: Workflow = {
       id,
       name: config.name,
@@ -193,7 +195,7 @@ export class WorkflowEngine {
 
   // Execute workflow
   async execute(
-    workflowId: string, 
+    workflowId: string,
     executor: (node: WorkflowNode, context: ExecutionContext) => Promise<NodeResult>,
     initialVariables?: Record<string, any>
   ): Promise<WorkflowExecution> {
@@ -475,7 +477,7 @@ export class WorkflowEngine {
       connectedNodes.add(e.source);
       connectedNodes.add(e.target);
     });
-    
+
     workflow.nodes.forEach(node => {
       if (!connectedNodes.has(node.id) && node.type !== 'trigger') {
         errors.push(`Node "${node.name}" is not connected to the workflow`);
@@ -520,7 +522,7 @@ export class WorkflowEngine {
       workflow.id = `workflow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       workflow.createdAt = new Date();
       workflow.updatedAt = new Date();
-      
+
       this.workflows.set(workflow.id, workflow);
       return workflow;
     } catch {
