@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Neon Colors */
+  --neon-cyan: #00f0ff;
+  --neon-pink: #ff006e;
+  --neon-purple: #a020f0;
+  --neon-green: #39ff14;
+  --neon-blue: #0080ff;
+  --neon-orange: #ff6b35;
+
+  /* Dark Backgrounds */
+  --dark-bg: #0a0e1a;
+  --dark-surface: #151b2e;
+  --dark-elevated: #1f273d;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+}
+
+body {
+  color: var(--text-primary);
+  background: radial-gradient(circle at 20% 50%, rgba(160, 32, 240, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0, 240, 255, 0.15) 0%, transparent 50%),
+    var(--dark-bg);
+  min-height: 100vh;
+}
+
+/* Glassmorphism Utilities */
+@layer utilities {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-heavy {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .neon-glow-cyan {
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.5),
+      0 0 20px rgba(0, 240, 255, 0.3),
+      0 0 30px rgba(0, 240, 255, 0.2);
+  }
+
+  .neon-glow-pink {
+    box-shadow: 0 0 10px rgba(255, 0, 110, 0.5),
+      0 0 20px rgba(255, 0, 110, 0.3),
+      0 0 30px rgba(255, 0, 110, 0.2);
+  }
+
+  .neon-glow-purple {
+    box-shadow: 0 0 10px rgba(160, 32, 240, 0.5),
+      0 0 20px rgba(160, 32, 240, 0.3),
+      0 0 30px rgba(160, 32, 240, 0.2);
+  }
+
+  .neon-glow-green {
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.5),
+      0 0 20px rgba(57, 255, 20, 0.3),
+      0 0 30px rgba(57, 255, 20, 0.2);
+  }
+
+  .neon-text-cyan {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.8),
+      0 0 20px rgba(0, 240, 255, 0.5),
+      0 0 30px rgba(0, 240, 255, 0.3);
+  }
+
+  .neon-text-pink {
+    color: var(--neon-pink);
+    text-shadow: 0 0 10px rgba(255, 0, 110, 0.8),
+      0 0 20px rgba(255, 0, 110, 0.5),
+      0 0 30px rgba(255, 0, 110, 0.3);
+  }
+
+  .neon-text-purple {
+    color: var(--neon-purple);
+    text-shadow: 0 0 10px rgba(160, 32, 240, 0.8),
+      0 0 20px rgba(160, 32, 240, 0.5),
+      0 0 30px rgba(160, 32, 240, 0.3);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon-cyan) 0%, var(--neon-purple) 100%);
+  border-radius: 10px;
+  border: 2px solid var(--dark-bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--neon-pink) 0%, var(--neon-purple) 100%);
+  box-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
+}
+
+/* Smooth Animations */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Remove transitions for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Neon Border Animation */
+@keyframes neon-border-rotate {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.neon-border-animated {
+  position: relative;
+  background: var(--dark-surface);
+  border-radius: 12px;
+}
+
+.neon-border-animated::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple), var(--neon-cyan));
+  background-size: 400%;
+  border-radius: 12px;
+  z-index: -1;
+  animation: neon-border-rotate 8s linear infinite;
+  opacity: 0.8;
+}
+
+/* Pulse Animation for Accent Elements */
+@keyframes neon-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+.neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* Glow on Hover */
+.glow-on-hover {
+  transition: all 0.3s ease;
+}
+
+.glow-on-hover:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
