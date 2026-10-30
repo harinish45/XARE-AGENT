@@ -1,76 +1,127 @@
-# 🤖 XARE-AGENT: Enterprise Autonomous Desktop & Extension AI Framework
-> **Production-grade multi-agent autonomous system combining desktop automation, browser extension capabilities, and multimodal vision-guided agent execution.**
+<div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Multi-Agent](https://img.shields.io/badge/Architecture-Hierarchical%20Multi--Agent-purple.svg)]()
-[![Status: Active](https://img.shields.io/badge/Status-Active%20v2.0.0-brightgreen.svg)]()
+# ⚡ XARE-AGENT
+
+**Enterprise Autonomous AI Agent Framework**
+
+[![CI](https://github.com/harinish45/XARE-AGENT/actions/workflows/ci.yml/badge.svg)](https://github.com/harinish45/XARE-AGENT/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Sprints](https://img.shields.io/badge/Sprints%20Complete-3%2F5-brightgreen)](SUMMARY.md)
+[![Status](https://img.shields.io/badge/Status-Active%20Development-orange)](TODO.md)
+
+> *Production-grade multi-agent orchestration for desktop automation, browser control, and multimodal AI execution*
+
+[📋 Roadmap](TODO.md) · [📊 Sprint Summary](SUMMARY.md) · [📄 PRD](PRD.md)
+
+</div>
 
 ---
 
-## 🏛️ System Architecture
-
-XARE-AGENT orchestrates intelligent desktop control, browser interactions, and autonomous task synthesis across multiple specialized agents.
+## 🏗️ System Architecture
 
 ```mermaid
-graph TD
-    A[User Objective / Prompt] --> B[Master Orchestrator Agent]
-    B --> C[Screen & Vision Grounding Engine]
-    B --> D[Browser Extension Interface - my-ai-extension]
-    B --> E[Desktop OS Action Layer - ai-desktop-agent]
-    C --> F[Visual Coordinate & Element Detection]
-    D --> G[(Active Web Page DOM & Context)]
-    E --> H[(Native OS Windows, Keystrokes, Mouse)]
-    F --> I[Self-Correction & Verification Loop]
-    G --> I
-    H --> I
-    I -->|Task Success| J[Deliver Result]
-    I -->|Failure/Deviation| B
+graph TB
+    subgraph User["👤 User Interface"]
+        Desktop["🖥️ Desktop App"]
+        Extension["🌐 Browser Extension"]
+    end
+
+    subgraph Orchestrator["⚡ Antigravity Orchestration Engine"]
+        Router["🔀 Task Router"]
+        Memory["🧠 Agent Memory"]
+        ToolReg["🔧 Tool Registry"]
+    end
+
+    subgraph Agents["🤖 Specialized Agents"]
+        DesktopAgent["🖥️ Desktop Agent\n(Screen + Input)"]
+        BrowserAgent["🌐 Browser Agent\n(DOM + Navigation)"]
+        VisionAgent["👁️ Vision Agent\n(Multimodal)"]
+    end
+
+    subgraph LLMs["🧠 LLM Backends"]
+        Gemini["Google Gemini"]
+        Claude["Anthropic Claude"]
+        GPT["OpenAI GPT"]
+    end
+
+    Desktop --> Router
+    Extension --> Router
+    Router --> DesktopAgent
+    Router --> BrowserAgent
+    Router --> VisionAgent
+    DesktopAgent <--> Memory
+    BrowserAgent <--> Memory
+    DesktopAgent --> LLMs
+    BrowserAgent --> LLMs
+    VisionAgent --> LLMs
+    Router <--> ToolReg
 ```
 
 ---
 
-## 🚀 Key Modules & Sub-systems
+## 🤖 Multi-Agent Flow
 
-| Sub-system | Path | Description |
-|---|:---|:---|
-| **AI Desktop Agent** | [`ai-desktop-agent/`](./ai-desktop-agent/) | Native OS automation engine handling window control, screen capture, OCR, and input simulation. |
-| **Browser AI Extension** | [`my-ai-extension/`](./my-ai-extension/) | Manifest V3 Chrome extension providing in-page context injection, form filling, and DOM manipulation. |
-| **Antigravity Engine** | [`antigravity/`](./antigravity/) | Autonomous multi-agent coordination core with self-healing feedback loops. |
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant O as Orchestrator
+    participant D as Desktop Agent
+    participant B as Browser Agent
+    participant L as LLM
+
+    U->>O: "Book a flight to Mumbai"
+    O->>O: Analyze intent & route task
+    O->>B: Open browser → travel site
+    B->>L: Extract form fields
+    L-->>B: Field mapping
+    B->>B: Fill form with user prefs
+    B->>D: Take screenshot for verification
+    D->>L: Verify booking details
+    L-->>D: Confirm / flag issues
+    D-->>O: Task complete
+    O-->>U: ✅ Booking confirmed
+```
 
 ---
 
-## 📦 Quick Start
+## ✅ Sprint Progress
 
-### Prerequisites
-* Node.js >= 18.0.0 or Bun >= 1.0
-* TypeScript 5.x
+| Sprint | Theme | Status |
+|--------|-------|--------|
+| Sprint 1 | Core Orchestration Engine | ✅ Complete |
+| Sprint 2 | Desktop + Browser Agents | ✅ Complete |
+| Sprint 3 | Multi-Agent Coordination | ✅ Complete |
+| Sprint 4 | Memory + Tool Registry | 🔧 In Progress |
+| Sprint 5 | Evaluation + Optimization | 📋 Planned |
 
-### Installation & Setup
+---
+
+## 📁 Structure
+
+```
+XARE-AGENT/
+├── ⚡ antigravity/          # Core orchestration engine
+├── 🖥️  ai-desktop-agent/   # Desktop automation agent
+├── 🌐  my-ai-extension/    # Browser extension agent
+├── 📄  PRD.md              # Product requirements
+├── 🗺️  ROADMAP.md          # High-level roadmap
+├── 📊  SPRINT_*_SUMMARY.md # Sprint docs
+└── 📋  TODO.md             # Detailed task list
+```
+
+---
+
+## 🚀 Quick Start
+
 ```bash
-# Clone the repository
 git clone https://github.com/harinish45/XARE-AGENT.git
-cd XARE-AGENT
-
-# Install dependencies for Desktop Agent
-cd ai-desktop-agent
+cd XARE-AGENT/antigravity
 npm install
-npm run build
-
-# Load Extension
-# Open Chrome -> chrome://extensions -> Load Unpacked -> select 'my-ai-extension/'
+npm start
 ```
 
 ---
 
-## 🤖 Vibe Coding & Autonomous AI Tool Instructions
-This repository is optimized for autonomous AI pair programmers (Cursor, Claude, Copilot, Antigravity):
-* [`PRD.md`](./PRD.md) — Comprehensive functional specifications and system architecture.
-* [`ROADMAP.md`](./ROADMAP.md) — Multi-sprint roadmap and deliverables.
-* [`TODO.md`](./TODO.md) — Atomic implementation checklist with unit test acceptance criteria.
-* [`AGENTS.md`](./AGENTS.md) — Coding standards and invariant rules for AI code generation.
-
----
-
-## 📄 License
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+<div align="center">
+<a href="LICENSE">MIT License</a> · Built with ❤️ by harinish45
+</div>
